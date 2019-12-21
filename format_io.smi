@@ -1,0 +1,59 @@
+_require "basis.smi"
+
+(* O.Danvy's printf *)
+(*
+    (* string *)
+    sprintf (lit "Hello world!" ++ eol)
+    (* -> "Hello world!\n" *)
+
+    (* string -> string *)
+    sprintf (lit "Hello " ++ % str ++ lit "!" ++ eol)
+
+    (* string *)
+    sprintf (lit "Hello " ++ % str ++ lit "!" ++ eol) "world"
+    (* -> "Hello world!\n" *)
+
+    (* string -> int -> string *)
+    sprintf (lit "The value of " ++ % str ++ lit " is " ++ % int ++ eol)
+
+
+    (* string *)
+    sprintf (lit "The value of " ++ % str ++ lit " is " ++ % int ++ eol) "x" 3
+    (* -> "The value of x is 3\n" *)
+*)
+
+structure Printf = struct
+    type ('a, 'b) format = string -> (string -> 'a) -> 'b
+    type 'a simple_format = ('a, 'a) format
+    type 'a formatter = 'a -> string
+
+    val lit: string -> 'a simple_format
+    val eol: 'a simple_format
+    val ++ : (('a, 'b) format * ('c, 'a) format) -> ('c, 'b) format
+    val int: int formatter
+    val str: string formatter
+    val % : 'a formatter -> ('b, ('a -> 'b)) format
+    val sprintf: (string, 'b) format -> 'b
+end
+
+(* scanf *)
+(*
+    (* string -> (int -> ?.X1) -> ?.X1 option *)
+    sscanf (lit "input: " ++ % int ++ lit ".")
+
+    (* (int -> ?.X1) -> ?.X1 option *)
+    sscanf (lit "input: " ++ % int ++ lit ".") "input: 42"
+*)
+structure Scanf = struct
+    type ('a, 'b, 'c) format = 'c -> 'a -> ('b * 'c) option
+    type ('a, 'c) simple_format = ('a, 'a, 'c) format
+    type ('a, 'c) scanner = (char, 'c) StringCvt.reader -> ('a, 'c) StringCvt.reader
+
+    val lit: string -> ('a, Substring.substring) simple_format
+    val eol: ('a, Substring.substring) simple_format
+    val ++ : ('a, 'b, 'c) format * ('b, 'd, 'c) format -> ('a, 'd, 'c) format
+    val int: (int, 'c) scanner
+    val bool: (bool, 'c) scanner
+    val % : ('a, Substring.substring) scanner -> ('a -> 'b, 'b, Substring.substring) format
+    val sscanf: ('a, 'b, Substring.substring) format -> string -> 'a -> ('b * Substring.substring) option
+end
