@@ -2,6 +2,7 @@ _require "basis.smi"
 _require "MAP.sig"
 _require "SET.sig"
 
+(* Create SET from MAP *)
 functor SetFromMap(M: sig
     type 'a t
     type key

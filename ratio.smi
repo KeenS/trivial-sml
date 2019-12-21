@@ -1,6 +1,7 @@
 _require "basis.smi"
 _require "RATIO.sig"
 
+(* rational numbers *)
 structure Ratio = struct
     type int (= int)
     type ratio (= boxed)

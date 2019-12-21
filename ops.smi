@@ -1,4 +1,5 @@
 _require "basis.smi"
+(* Misc operators that lacks in basis *)
 
 infixr 1 $
 infix 1 |>

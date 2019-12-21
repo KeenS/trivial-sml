@@ -2,6 +2,7 @@ _require "basis.smi"
 _require "SET.sig"
 _require "MAP.sig"
 
+(* Red black tree implementation *)
 functor MkRedBlackTree(X: sig
     type key
     val compare: key * key -> order

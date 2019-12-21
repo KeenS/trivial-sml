@@ -1,6 +1,8 @@
 _require "basis.smi"
 _require "./MAP.sig"
 
+(* A variant of HAMT (Hash-Array Mapped Trie). *)
+(* It use a patricia tree instead of trie tree. *)
 functor MkHamt(X: sig eqtype key val hash: key -> Int32.int end) = struct
     type key = X.key
     type 'a t (= boxed)
