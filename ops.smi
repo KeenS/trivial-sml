@@ -1,0 +1,54 @@
+_require "basis.smi"
+
+infixr 1 $
+infix 1 |>
+
+(* g (f x) = g $ f x *)
+val $ : ('a -> 'b) * 'a -> 'b
+(* g (f x) = x |> f |> g *)
+val |> : 'a * ('a -> 'b) -> 'b
+
+(* equivalent to Haskell's backtick notation  *)
+(* val example = [3, 2, 1] <\List.revAppend\> [4, 5, 6] *)
+infix 4 <\ \>
+val <\ : 'a * (('a * 'b) -> 'c) -> 'b -> 'c
+val \> : ('a -> 'b) * 'a -> 'b
+
+val id: 'a -> 'a
+val const: 'a -> 'b -> 'a
+val negate : ('a -> bool) -> 'a -> bool
+val curry: ('a * 'b -> 'c) -> 'a -> 'b -> 'c
+val uncurry: ('a -> 'b -> 'c) -> 'a * 'b -> 'c
+val flip: ('a * 'b -> 'c) -> 'b * 'a -> 'c
+val protect: (unit -> unit) -> (unit -> 'a) -> 'a
+val printLn: string -> unit
+
+infix 4 % :% <-
+(* arr%1 *)
+val % : 'a array * int -> 'a
+(* arr:%2 <- 10 *)
+val :% : 'a array * int -> 'a -> unit
+val <- : ('a -> unit) * 'a -> unit
+
+
+structure Ref = struct
+    (* infix 1 += -= *= *)
+    val += : int ref * int -> unit
+    val -= : int ref * int -> unit
+    val *= : int ref * int -> unit
+end
+
+structure Result = struct
+    datatype ('a, 'e) t = Ok of 'a | Error of 'e
+    val ok: 'a -> ('a, 'e) t
+    val error: 'e -> ('a, 'e) t
+    val value: ('a, 'e) t -> 'a -> 'a
+end
+
+(* array accessor like ref *)
+structure ArrayRef = struct
+    type 'a arref (= boxed)
+    val @ : 'a array * int -> 'a arref
+    val ! : 'a arref -> 'a
+    val := : 'a arref * 'a -> unit
+end

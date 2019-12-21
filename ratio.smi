@@ -1,0 +1,40 @@
+_require "basis.smi"
+_require "RATIO.sig"
+
+structure Ratio = struct
+    type int (= int)
+    type ratio (= boxed)
+    val fromIntPair: int * int -> ratio
+    val toIntPair: ratio -> int * int
+    val + : ratio * ratio -> ratio
+    val - : ratio * ratio -> ratio
+    val * : ratio * ratio -> ratio
+    val / : ratio * ratio -> ratio
+    val rem: ratio * ratio -> ratio
+    val ~ : ratio -> ratio
+    val abs: ratio -> ratio
+
+    val compare: ratio * ratio -> order
+    val < : ratio * ratio -> bool
+    val <= : ratio * ratio -> bool
+    val > : ratio * ratio -> bool
+    val >= : ratio * ratio -> bool
+
+    val min : ratio * ratio -> ratio
+    val max : ratio * ratio -> ratio
+    val sign: ratio -> int
+    val sameSign: ratio * ratio -> bool
+
+    val split: ratio -> {whole: ratio, frac: ratio}
+    val ratioMod: ratio -> ratio
+
+    val floor: ratio -> int
+    val ceil: ratio -> int
+    val trunc: ratio -> int
+    val round: ratio -> int
+
+    val fmt: StringCvt.radix -> ratio -> string
+    val toString: ratio -> string
+    val scan: StringCvt.radix -> (char, 'a) StringCvt.reader -> (ratio, 'a) StringCvt.reader
+    val fromString: string -> ratio option
+end
