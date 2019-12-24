@@ -84,26 +84,26 @@ functor MkHamt(X: sig eqtype key val hash: key -> Int32.int end) : MAP
             val base_rest = base_hash div q div 2
             val rest = hash div q div 2
             val branch = if nthBit hash nth = 0 then ZERO else ONE
-        in HASH_DIFFER { count = nth, base = base, base_rest = base_rest, rest = rest, branch = branch} end
+        in HASH_DIFFER { count = nth, base = base, base_rest = base_rest, rest = rest, branch = branch } end
     end
 
     fun findHash Leaf hash key = NONE
-      | findHash (Exact {hash = hash, size = size, assoc = assoc}) hash2 key =
+      | findHash (Exact {hash, size, assoc}) hash2 key =
         if hash = hash2 then Assoc.find assoc key else NONE
-      | findHash (Node {hash = hash, size = size, zero = zero, one = one}) hash2 key =
-        (case compare hash hash2 size of
-             HASH_SAME { rest = rest, branch = ZERO} => findHash zero rest key
-          |  HASH_SAME { rest = rest, branch =  ONE} => findHash one  rest key
-          | _ => NONE)
+      | findHash (Node {hash, size, zero, one}) hash2 key =
+        case compare hash hash2 size of
+            HASH_SAME { rest, branch = ZERO } => findHash zero rest key
+         |  HASH_SAME { rest, branch =  ONE } => findHash one  rest key
+         | _ => NONE
 
     fun find t key = findHash t (X.hash key) key
     fun isMember t key = Option.isSome (find t key)
 
 
     fun insertHash Leaf hash key value = Exact { hash = hash, size = 32, assoc = Assoc.fromPair(key, value) }
-      | insertHash (Exact {hash = hash, size = size, assoc = assoc}) hash2 key value  =
+      | insertHash (Exact {hash, size, assoc}) hash2 key value  =
         (case compare hash hash2 size of
-             HASH_DIFFER { count = count, base = base, base_rest = base_rest, rest = rest, branch = branch} => let
+             HASH_DIFFER { count, base, base_rest, rest, branch } => let
               val existing = Exact { hash = base_rest, size = size - count - 1, assoc = assoc}
               val new      = Exact { hash = rest,      size = size - count - 1, assoc = Assoc.fromPair(key, value)}
           in case branch of
@@ -112,44 +112,47 @@ functor MkHamt(X: sig eqtype key val hash: key -> Int32.int end) : MAP
           end
            | HASH_SAME _ => Exact { hash = hash, size = size, assoc = Assoc.pushNew assoc (key, value) }
         )
-      | insertHash (Node {hash = hash, size = size, zero = zero, one = one}) hash2 key value =
-        (case compare hash hash2 size of
-             HASH_SAME { rest = rest, branch = ZERO} => Node {hash = hash, size = size, zero = (insertHash zero rest key value), one = one}
-           | HASH_SAME { rest = rest, branch =  ONE} => Node {hash = hash, size = size, zero = zero, one = (insertHash one rest key value)}
-           | HASH_DIFFER { count = count, base = base, base_rest = base_rest, rest = rest, branch = branch} => let
+      | insertHash (Node {hash, size, zero, one}) hash2 key value =
+        case compare hash hash2 size of
+            HASH_SAME { rest, branch = ZERO } => Node {hash = hash, size = size, zero = (insertHash zero rest key value), one = one}
+          | HASH_SAME { rest, branch =  ONE } => Node {hash = hash, size = size, zero = zero, one = (insertHash one rest key value)}
+          | HASH_DIFFER { count, base, base_rest, rest, branch } => let
               val existing = Node  { hash = base_rest, size = size - count - 1, zero = zero, one = one}
               val new      = Exact { hash = rest,      size = size - count - 1, assoc = Assoc.fromPair (key, value) }
-           in case branch of
-                  ZERO => Node { hash = base, size = count, zero = new, one = existing }
-                |  ONE => Node { hash = base, size = count, zero = existing, one = new }
-           end
-        )
+          in case branch of
+                 ZERO => Node { hash = base, size = count, zero = new, one = existing }
+              |  ONE => Node { hash = base, size = count, zero = existing, one = new }
+          end
 
 
     fun insert t k v = insertHash t (X.hash k) k v
 
     fun removeHash Leaf hash key = (Leaf, NONE)
-      | removeHash (t as Exact {hash = hash, size = size, assoc = assoc}) hash2 key =
+      | removeHash (t as Exact {hash, size, assoc}) hash2 key =
         if hash = hash2
         then let val (assoc, data) = Assoc.removeOne assoc key
-             in if Assoc.isEmpty assoc then (Leaf, data) else (Exact { hash = hash, size = size, assoc = assoc } , data) end
+             in
+                 if Assoc.isEmpty assoc
+                 then (Leaf, data)
+                 else (Exact { hash = hash, size = size, assoc = assoc } , data)
+             end
         else (t, NONE)
-      | removeHash (t as Node {hash = hash, size = size, zero = zero, one = one}) hash2 key2 = 
-        (case compare hash hash2 size of
-             HASH_SAME {rest = rest, branch = ZERO} => let
-              val (zero, v) = removeHash zero rest key2
-          in (Node {hash = hash, size = size, zero = zero, one = one}, v) end
-          |  HASH_SAME {rest = rest, branch =  ONE} => let
-              val ( one, v) = removeHash  one rest key2
-          in (Node {hash = hash, size = size, zero = zero, one = one}, v) end
-          |  HASH_DIFFER _=> (t, NONE))
+      | removeHash (t as Node {hash, size, zero, one}) hash2 key2 =
+        case compare hash hash2 size of
+            HASH_SAME { rest, branch = ZERO } => let
+             val (zero, v) = removeHash zero rest key2
+         in (Node { hash = hash, size = size, zero = zero, one = one }, v) end
+         |  HASH_SAME { rest, branch =  ONE } => let
+             val ( one, v) = removeHash  one rest key2
+         in (Node { hash = hash, size = size, zero = zero, one = one} , v) end
+         |  HASH_DIFFER _=> (t, NONE)
 
     fun remove t key = removeHash t (X.hash key) key
 
     fun delete t key= #1 (remove t key)
 
     fun fold Leaf acc f = acc
-      | fold (Exact {assoc = assoc, ...}) acc f = List.foldl f acc assoc
+      | fold (Exact {assoc, ...}) acc f = List.foldl f acc assoc
       | fold (Node {zero, one, ...}) acc f= fold one (fold zero acc f) f
 
     fun fromList l = List.foldl (fn ((k, v), t) => insert t k v) empty l
